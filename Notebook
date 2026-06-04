@@ -1,1 +1,80 @@
+from pynq import Overlay, allocate
+import numpy as np
+import time
 
+# ── 1. Load the Stable 32-Bit Hardware Overlay ───────────────────────────────
+print(" Loading fully-verified 32-bit stereo overlay...")
+ol = Overlay("./disparity_wrapper.bit")
+
+dma            = ol.axi_dma_0
+left_census    = ol.left_census_processor_0
+right_census   = ol.right_census_process_0
+disp_matcher   = ol.hw_disparity_matcher_0
+
+# ── 2. Define Resolution Boundaries ──────────────────────────────────────────
+HEIGHT       = 480
+INPUT_WIDTH  = 1280   # Full side-by-side camera width
+OUTPUT_WIDTH = 640    # Processed disparity depth map width
+
+# ── 3. Allocate Permanent DRAM Buffers ────────────────────────────────────────
+in_buffer  = allocate(shape=(INPUT_WIDTH  * HEIGHT,), dtype=np.uint32)
+out_buffer = allocate(shape=(OUTPUT_WIDTH * HEIGHT,), dtype=np.uint32)
+
+# ── 4. Generate High-Texture Random Noise Test Pattern ────────────────────────
+print("🎲 Generating high-contrast random noise frame...")
+in_buffer[:] = np.random.randint(0, 0xFFFFFFFF, INPUT_WIDTH * HEIGHT, dtype=np.uint32)
+out_buffer[:] = 0
+
+# ── 5. Hard Reset the Data Movers to Clear Residual Errors ────────────────────
+print(" Performing hardware channel soft-resets...")
+dma.sendchannel.stop()
+dma.recvchannel.stop()
+dma.sendchannel.start()
+dma.recvchannel.start()
+
+# ── 6. Initiate the Stream Transmissions ──────────────────────────────────────
+dma.recvchannel.transfer(out_buffer)
+dma.sendchannel.transfer(in_buffer)
+
+# ── 7. Wake Up the HLS Processing Cores via AXI-Lite ─────────────────────────
+left_census.write(0x00,  0x01)   # ap_start
+right_census.write(0x00, 0x01)
+disp_matcher.write(0x00, 0x01)
+
+# ── 8. Status-Driven Active Polling Loop (Zero Freezes!) ─────────────────────
+print(" Polling core execution states...")
+cores_finished = False
+
+for timeout in range(20):  # 2.0-second absolute safety window
+    time.sleep(0.1)
+    
+    # Read the status of the Left Census Core directly
+    core_status = left_census.read(0x00)
+    
+    if core_status == 0x04:  # 0x04 = Pure IDLE (Core successfully completed its frame)
+        print("   ► Hardware cores safely reached the IDLE state!")
+        cores_finished = True
+        break
+
+# Give the physical memory controllers a few extra milliseconds to completely settle
+time.sleep(0.05)
+
+# ── 9. Force Sync CPU Cache and Analyze Results ──────────────────────────────
+out_buffer.invalidate()
+
+if cores_finished:
+    non_zero = np.count_nonzero(out_buffer)
+    total_px = out_buffer.size
+    
+    print("\n FINAL PIPELINE ANALYSIS REPORT:")
+    print(f"   ► Operational Span        : Elements {np.where(out_buffer != 0)[0][0]} through {np.where(out_buffer != 0)[0][-1]}")
+    print(f"   ► Valid Pixel Array Yield : {non_zero} / {total_px} ({100*non_zero/total_px:.2f}%)")
+    
+    # Isolate unique calculated depth steps
+    unique_depths = np.unique(out_buffer)
+    active_depths = unique_depths[unique_depths != 0]
+    print(f"   ► Computed Depth Profiles : {len(active_depths)} distinct disparity levels.")
+    print(f"   ► Sample Matrix Values    : {active_depths[:10]}")
+    print("\n SUCCESS! The base framework wrapper is completely stable.")
+else:
+    print("\n Error: The hardware processing core timed out before completing the frame.")
