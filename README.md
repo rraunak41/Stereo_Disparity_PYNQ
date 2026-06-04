@@ -22,10 +22,6 @@ To maximize data throughput and minimize DMA overhead, this pipeline packs Left 
      [axis_data_fifo_0]            [axis_data_fifo_1]
      (Elastic buffer)              (Elastic buffer)
            │                             │
-           ▼                             ▼
-   [Left Census Core]            [Right Census Core]
-(Window signature loop)       (Window signature loop)
-           │                             │
            └──────────────┬──────────────┘
                           ▼
               [ HW Disparity Matcher ]
