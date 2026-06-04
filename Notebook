@@ -21,7 +21,7 @@ in_buffer  = allocate(shape=(INPUT_WIDTH  * HEIGHT,), dtype=np.uint32)
 out_buffer = allocate(shape=(OUTPUT_WIDTH * HEIGHT,), dtype=np.uint32)
 
 # ── 4. Generate High-Texture Random Noise Test Pattern ────────────────────────
-print("🎲 Generating high-contrast random noise frame...")
+print(" Generating high-contrast random noise frame...")
 in_buffer[:] = np.random.randint(0, 0xFFFFFFFF, INPUT_WIDTH * HEIGHT, dtype=np.uint32)
 out_buffer[:] = 0
 
