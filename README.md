@@ -9,7 +9,7 @@ A high-performance, real-time stereo vision depth-mapping co-processor accelerat
 
 To maximize data throughput and minimize DMA overhead, this pipeline packs Left and Right camera frames side-by-side into a single $1280 \times 480$ buffer before streaming them to the programmable logic (PL).
 
-[ DRAM Input Buffer ]
+              [ DRAM Input Buffer ]
                        │ (1280 x 480 packed pixels)
                        ▼
            [ AXI DMA (MM2S Transmit) ] 
@@ -17,7 +17,7 @@ To maximize data throughput and minimize DMA overhead, this pipeline packs Left 
                        ▼
            [ Verilog Stereo Splitter ] 
           (Demuxes stream into two phases)
-           │                             │
+           │                             |
            ▼ (Left 640 Phase)            ▼ (Right 640 Phase)
      [axis_data_fifo_0]            [axis_data_fifo_1]
      (Elastic buffer)              (Elastic buffer)
