@@ -1,0 +1,43 @@
+import cv2
+import time
+from pynq import Overlay
+from pynq.lib.video import *
+
+print("Loading output-side bitstream...")
+overlay = Overlay("./grayscale.bit")
+
+hdmi_out = overlay.video.hdmi_out
+
+mode = VideoMode(640, 480, 24)
+hdmi_out.configure(mode, PIXEL_BGR)
+hdmi_out.start()
+
+print("Initializing USB Webcam...")
+cap = cv2.VideoCapture(0)
+cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
+cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
+
+print("  Streaming Stereo USB Camera data through Hardware Grayscale IP.")
+print("  To stop, select: Kernel -> Interrupt")
+
+try:
+    
+    for i in range(1000):
+        ret, cam = cap.read()
+        if not ret:
+            print("cam frame read failed.")
+            break
+            
+        
+        frame = hdmi_out.newframe()
+        
+        frame[:] = cam
+        
+        hdmi_out.writeframe(frame)
+        
+except KeyboardInterrupt:
+    print("\nStreaming stopped by user.")
+finally:
+    cap.release()
+    hdmi_out.close()
+    print("Video channels cleanly shut down.")
