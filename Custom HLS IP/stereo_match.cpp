@@ -115,14 +115,16 @@ void stereo_match(
                 (desc != 0) &&
                 (desc != 0xFFFFFF);
 
-            //------------------------------------------------
+          //------------------------------------------------
             // Confidence gate
             //------------------------------------------------
             ap_uint<8> disparity = 0;
 
             if(valid && (best_cost < 8))
             {
-                disparity = best_disp;   // Raw disparity (0–32)
+                disparity =
+                    (best_disp * 255) /
+                    (MAX_DISP - 1);
             }
 
             //------------------------------------------------
