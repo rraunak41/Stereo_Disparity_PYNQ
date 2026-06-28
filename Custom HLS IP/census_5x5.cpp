@@ -4,7 +4,7 @@
 
 typedef ap_axiu<24,1,1,1> video_pixel;
 
-#define WIDTH 1280
+#define IMG_WIDTH 1280
 #define BORDER 2
 
 void census_5x5(
@@ -18,10 +18,10 @@ void census_5x5(
     //---------------------------------------------------
     // Four line buffers
     //---------------------------------------------------
-    static ap_uint<8> line0[WIDTH];
-    static ap_uint<8> line1[WIDTH];
-    static ap_uint<8> line2[WIDTH];
-    static ap_uint<8> line3[WIDTH];
+    static ap_uint<8> line0[IMG_WIDTH];
+    static ap_uint<8> line1[IMG_WIDTH];
+    static ap_uint<8> line2[IMG_WIDTH];
+    static ap_uint<8> line3[IMG_WIDTH];
 
 #pragma HLS BIND_STORAGE variable=line0 type=ram_1p impl=bram
 #pragma HLS BIND_STORAGE variable=line1 type=ram_1p impl=bram
@@ -140,7 +140,7 @@ void census_5x5(
             census;
 
         if(x < BORDER ||
-           x >= (WIDTH-BORDER) ||
+           x >= (IMG_WIDTH-BORDER) ||
            y < BORDER)
         {
             output = 0;
