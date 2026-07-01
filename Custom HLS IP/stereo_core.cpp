@@ -145,7 +145,7 @@ void stereo_core(
             if (in_valid_zone && unique)
             {
                 // Scale disparity to full 0-255 grayscale
-            	disparity_out = best_disp;
+            	disparity_out = (ap_uint<8>)((best_disp * 255) / (MAX_DISP - 1));
             }
 
             out.data =
