@@ -9,7 +9,7 @@ typedef ap_uint<24>        descriptor_t;
 
 
 #define HALF_WIDTH  640     // pixels per eye (total width = 1280)
-#define MAX_DISP     16     // disparity search range
+#define MAX_DISP     48     // disparity search range
 
 #define AGG_W         5     // horizontal aggregation window (must be odd)
 #define AGG_HALF_W    2     // AGG_W / 2
@@ -145,8 +145,7 @@ void stereo_core(
             if (in_valid_zone && unique)
             {
                 // Scale disparity to full 0-255 grayscale
-                disparity_out =
-                    (ap_uint<8>)((best_disp * 255) / (MAX_DISP - 1));
+            	disparity_out = best_disp;
             }
 
             out.data =
