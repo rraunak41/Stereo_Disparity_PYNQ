@@ -1,43 +1,56 @@
 import cv2
-import time
 from pynq import Overlay
 from pynq.lib.video import *
 
-print("Loading output-side bitstream...")
-overlay = Overlay("./grayscale.bit")
+print("Loading bitstream...")
+ol = Overlay("./det.bit")
 
-hdmi_out = overlay.video.hdmi_out
+hdmi_out = ol.video.hdmi_out
 
-mode = VideoMode(640, 480, 24)
+# HDMI output
+mode = VideoMode(1280, 720, 24)
 hdmi_out.configure(mode, PIXEL_BGR)
 hdmi_out.start()
 
-print("Initializing USB Webcam...")
+print("Opening stereo camera...")
 cap = cv2.VideoCapture(0)
-cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
+
+cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
 cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
 
-print("  Streaming Stereo USB Camera data through Hardware Grayscale IP.")
-print("  To stop, select: Kernel -> Interrupt")
+ret, test = cap.read()
+
+if ret:
+    print("Camera shape =", test.shape)
+else:
+    print("Camera failed!")
+    raise RuntimeError("Camera not working")
+
+print("Streaming...")
 
 try:
-    
-    for i in range(1000):
-        ret, cam = cap.read()
+
+    while True:
+
+        ret, stereo = cap.read()
+
         if not ret:
-            print("cam frame read failed.")
+            print("Camera read failed")
             break
-            
-        
+
         frame = hdmi_out.newframe()
-        
-        frame[:] = cam
-        
+
+        # Clear entire HDMI frame
+        frame[:] = 0
+
+        # Place stereo frame in center
+        frame[120:600, :, :] = stereo
+
         hdmi_out.writeframe(frame)
-        
+
 except KeyboardInterrupt:
-    print("\nStreaming stopped by user.")
+    print("Stopped")
+
 finally:
     cap.release()
     hdmi_out.close()
-    print("Video channels cleanly shut down.")
